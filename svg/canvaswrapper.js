@@ -1,15 +1,15 @@
 function saveMorph(morph, width, height) {
     var ctx = new C2S();
-    width = width || 500;
-    height = height || 500;
+    width = width || document.getElementById('world').width;
+    height = height || document.getElementById('world').height;
     morph.fullDrawOn(ctx, new Rectangle(0, 0, width, height));
     return ctx.getSerializedSvg(true);
 }
 
 function saveMorphOutline(morph, width, height) {
     var ctx = new C2S();
-    width = width || 500;
-    height = height || 500;
+    width = width || document.getElementById('world').width;
+    height = height || document.getElementById('world').height;
     morph.drawOn(ctx, new Rectangle(0, 0, width, height));
     return ctx.getSerializedSvg(true);
 }
