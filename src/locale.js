@@ -30,9 +30,13 @@
 
         lang-de.js
 
-    or to the separate file
+    or to the section titled
 
-        translating Snap.txt
+        Translating Snap!
+
+    in the file
+
+        Contributing.md
 
     (same contents) if you would like to contribute.
 
@@ -42,7 +46,7 @@
 
 /*global modules, contains*/
 
-modules.locale = '2020-June-08';
+modules.locale = '2020-July-09';
 
 // Global stuff
 
@@ -121,7 +125,7 @@ SnapTranslator.dict.en = {
     'translator_e-mail':
         'jens@moenig.org',
     'last_changed':
-        '2019-10-21',
+        '2020-07-09',
 
     // symbols in dropdowns
     '__shout__go__':
@@ -130,6 +134,8 @@ SnapTranslator.dict.en = {
     // rewordings in English avoiding having to adjust all other translations
     'any':
         'random',
+    'length of %s':
+        'length of text %s',
 
     // long strings look-up only
     'file menu import hint':
@@ -162,7 +168,7 @@ SnapTranslator.dict.de = {
     'translator_e-mail':
         'jens@moenig.org, jadga.huegle@sap.com',
     'last_changed':
-        '2020-06-08'
+        '2020-07-09'
 };
 
 SnapTranslator.dict.it = {
@@ -184,7 +190,7 @@ SnapTranslator.dict.ja = {
     'translator_e-mail':
         'abee@squeakland.jp',
     'last_changed':
-        '2018-10-23'
+        '2020-07-03'
 };
 
 SnapTranslator.dict.ja_HIRA = {
@@ -235,11 +241,11 @@ SnapTranslator.dict.zh_CN = {
     'language_name':
         '简体中文',
     'language_translator':
-        '五百刀/邓江华',
+        '五百刀/邓江华/曹儒林',
     'translator_e-mail':
         'ubertao@qq.com/djh@rhjxx.cn',
     'last_changed':
-        '2019-08-06'
+        '2020-07-03'
 };
 
 SnapTranslator.dict.eo = {
@@ -422,11 +428,11 @@ SnapTranslator.dict.bn = {
     'language_name':
         'বাংলা',
     'language_translator':
-        'Dr. Mokter Hossain',
+        'Dr. Mokter Hossain, Radman Siddiki',
     'translator_e-mail':
-        'mokter@gmail.com',
+        'mokter@gmail.com, radman.siddiki@outlook.com',
     'last_changed':
-        '2014-07-02'
+        '2020-07-04'
 };
 
 SnapTranslator.dict.kn = {

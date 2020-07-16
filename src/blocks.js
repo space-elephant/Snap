@@ -141,14 +141,14 @@ String, StringMorph, TextMorph, contains, degrees, detect, PianoMenuMorph,
 document, getDocumentPositionOf, isNaN, isString, newCanvas, nop, parseFloat,
 radians, useBlurredShadows, SpeechBubbleMorph, modules, StageMorph, Sound,
 fontHeight, TableFrameMorph, SpriteMorph, Context, ListWatcherMorph, Rectangle,
-DialogBoxMorph, BlockInputFragmentMorph, PrototypeHatBlockMorph,
+DialogBoxMorph, BlockInputFragmentMorph, PrototypeHatBlockMorph, WHITE, BLACK,
 Costume, IDE_Morph, BlockDialogMorph, BlockEditorMorph, localize, isNil,
 isSnapObject, PushButtonMorph, SpriteIconMorph, Process, AlignmentMorph,
 CustomCommandBlockMorph, SymbolMorph, ToggleButtonMorph, DialMorph*/
 
 // Global stuff ////////////////////////////////////////////////////////
 
-modules.blocks = '2020-June-15';
+modules.blocks = '2020-July-15';
 
 var SyntaxElementMorph;
 var BlockMorph;
@@ -284,6 +284,7 @@ SyntaxElementMorph.prototype.setScale = function (num) {
 
 SyntaxElementMorph.prototype.setScale(1);
 SyntaxElementMorph.prototype.isCachingInputs = false;
+SyntaxElementMorph.prototype.alpha = 1;
 
 // SyntaxElementMorph instance creation:
 
@@ -302,6 +303,7 @@ SyntaxElementMorph.prototype.init = function () {
 
     this.defaults = [];
     this.cachedInputs = null;
+    delete this.alpha;
 };
 
 // SyntaxElementMorph accessing:
@@ -878,7 +880,7 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             break;
         case '%br':
             part = new Morph();
-            part.setExtent(new Point(0, 0));
+            part.setExtent(ZERO);
             part.isBlockLabelBreak = true;
             part.getSpec = () => '%br';
             break;
@@ -1326,6 +1328,7 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
                     'e^' : ['e^'],
                     '10^' : ['10^'],
                     '2^' : ['2^'],
+                    id: ['id']
                 },
                 true
             );
@@ -1566,10 +1569,10 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
         case '%loopArrow':
             part = new SymbolMorph('loop');
             part.size = this.fontSize * 0.7;
-            part.color = new Color(255, 255, 255);
+            part.color = WHITE;
             part.shadowColor = this.color.darker(this.labelContrast);
             part.shadowOffset = MorphicPreferences.isFlat ?
-                    new Point() : this.embossing;
+                    ZERO : this.embossing;
             part.fixLayout();
             break;
         case '%clr':
@@ -1624,40 +1627,40 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
         case '%turtle':
             part = new SymbolMorph('turtle');
             part.size = this.fontSize * 1.2;
-            part.color = new Color(255, 255, 255);
+            part.color = WHITE;
             part.shadowColor = this.color.darker(this.labelContrast);
             part.shadowOffset = MorphicPreferences.isFlat ?
-                    new Point() : this.embossing;
+                    ZERO : this.embossing;
             part.fixLayout();
             break;
         case '%turtleOutline':
             part = new SymbolMorph('turtleOutline');
             part.size = this.fontSize;
-            part.color = new Color(255, 255, 255);
+            part.color = WHITE;
             part.isProtectedLabel = true; // doesn't participate in zebraing
             part.shadowColor = this.color.darker(this.labelContrast);
             part.shadowOffset = MorphicPreferences.isFlat ?
-                    new Point() : this.embossing;
+                    ZERO : this.embossing;
             part.fixLayout();
             break;
         case '%clockwise':
             part = new SymbolMorph('turnRight');
             part.size = this.fontSize * 1.5;
-            part.color = new Color(255, 255, 255);
+            part.color = WHITE;
             part.isProtectedLabel = false; // zebra colors
             part.shadowColor = this.color.darker(this.labelContrast);
             part.shadowOffset = MorphicPreferences.isFlat ?
-                    new Point() : this.embossing;
+                    ZERO : this.embossing;
             part.fixLayout();
             break;
         case '%counterclockwise':
             part = new SymbolMorph('turnLeft');
             part.size = this.fontSize * 1.5;
-            part.color = new Color(255, 255, 255);
+            part.color = WHITE;
             part.isProtectedLabel = false; // zebra colors
             part.shadowColor = this.color.darker(this.labelContrast);
             part.shadowOffset = MorphicPreferences.isFlat ?
-                    new Point() : this.embossing;
+                    ZERO : this.embossing;
             part.fixLayout();
             break;
         case '%greenflag':
@@ -1667,7 +1670,7 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             part.isProtectedLabel = true; // doesn't participate in zebraing
             part.shadowColor = this.color.darker(this.labelContrast);
             part.shadowOffset = MorphicPreferences.isFlat ?
-                    new Point() : this.embossing;
+                    ZERO : this.embossing;
             part.fixLayout();
             break;
         case '%stop':
@@ -1677,7 +1680,7 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             part.isProtectedLabel = true; // doesn't participate in zebraing
             part.shadowColor = this.color.darker(this.labelContrast);
             part.shadowOffset = MorphicPreferences.isFlat ?
-                    new Point() : this.embossing;
+                    ZERO : this.embossing;
             part.fixLayout();
             break;
         case '%pause':
@@ -1687,26 +1690,26 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             part.isProtectedLabel = true; // doesn't participate in zebraing
             part.shadowColor = this.color.darker(this.labelContrast);
             part.shadowOffset = MorphicPreferences.isFlat ?
-                    new Point() : this.embossing;
+                    ZERO : this.embossing;
             part.fixLayout();
             break;
         case '%blitz':
             part = new SymbolMorph('flash');
             part.size = this.fontSize;
-            part.color = new Color(255, 255, 255);
+            part.color = WHITE;
             part.isProtectedLabel = false; // zebra colors
             part.shadowColor = this.color.darker(this.labelContrast);
             part.shadowOffset = MorphicPreferences.isFlat ?
-                    new Point() : this.embossing;
+                    ZERO : this.embossing;
             part.fixLayout();
             break;
         case '%list':
             part = new SymbolMorph('list');
             part.size = this.fontSize;
-            part.color = new Color(255, 255, 255);
+            part.color = WHITE;
             part.shadowColor = this.color.darker(this.labelContrast);
             part.shadowOffset = MorphicPreferences.isFlat ?
-                    new Point() : this.embossing;
+                    ZERO : this.embossing;
             part.fixLayout();
             break;
 
@@ -1764,7 +1767,7 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
         part.isProtectedLabel = tokens.length > 2; // zebra colors
         part.shadowColor = this.color.darker(this.labelContrast);
         part.shadowOffset = MorphicPreferences.isFlat ?
-                new Point() : this.embossing;
+                ZERO : this.embossing;
         part.fixLayout();
     } else {
         part = new StringMorph(
@@ -1775,9 +1778,9 @@ SyntaxElementMorph.prototype.labelPart = function (spec) {
             false, // italic
             false, // isNumeric
             MorphicPreferences.isFlat ?
-                    new Point() : this.embossing, // shadowOffset
+                    ZERO : this.embossing, // shadowOffset
             this.color.darker(this.labelContrast), // shadowColor
-            new Color(255, 255, 255), // color
+            WHITE, // color
             this.labelFontName // fontName
         );
     }
@@ -1803,7 +1806,6 @@ SyntaxElementMorph.prototype.fixLayout = function () {
         maxX = 0,
         blockWidth = this.minWidth,
         blockHeight,
-        affected,
         l = [],
         lines = [],
         space = this.isPrototype ?
@@ -1812,8 +1814,7 @@ SyntaxElementMorph.prototype.fixLayout = function () {
         	this.methodIconExtent().x + space : 0,
         bottomCorrection,
         hasLoopCSlot = false,
-        hasLoopArrow = false,
-        initialExtent = this.extent();
+        hasLoopArrow = false;
 
     if ((this instanceof MultiArgMorph) && (this.slotSpec !== '%cs')) {
         blockWidth += this.arrows().width();
@@ -2054,35 +2055,14 @@ SyntaxElementMorph.prototype.fixLayout = function () {
     }
 
     // find out if one of my parents needs to be fixed
-    if (this instanceof CommandBlockMorph) {
-        if (this.height() !== initialExtent.y) {
-            affected = this.parentThatIsA(CommandSlotMorph, ReporterSlotMorph);
-            if (affected) {
-                affected.fixLayout();
-            }
-        }
-        if (this.width() !== initialExtent.x) {
-            affected = this.parentThatIsA(
-                ReporterBlockMorph,
-                CommandSlotMorph,
-                RingCommandSlotMorph,
-                ReporterSlotMorph
-            );
-            if (affected) {
-                affected.fixLayout();
-            }
-        }
-        if (affected) {
-            return;
-        }
-    } else if (this instanceof ReporterBlockMorph) {
-        if (this.parent && this.parent.fixLayout) {
-            this.parent.fixLayout();
-            this.parent.changed();
+    if (this instanceof BlockMorph && this.parent && this.parent.fixLayout) {
+        this.parent.fixLayout();
+        this.parent.changed();
+        if (this.parent instanceof SyntaxElementMorph) {
             return;
         }
     }
-
+    
     this.fixHighlight();
 };
 
@@ -3173,6 +3153,10 @@ BlockMorph.prototype.unringify = function () {
 };
 
 BlockMorph.prototype.relabel = function (alternativeSelectors) {
+    // morph one block into another trying to keep the inputs in place
+    // alternative Selector can either be a string representing
+    // a block selector or a 2-item array containing a string and
+    // an integer offset for restoring inputs
     var menu, oldInputs,
         target = this.selectForEdit(); // copy-on-edit
     if (target !== this) {
@@ -3180,14 +3164,22 @@ BlockMorph.prototype.relabel = function (alternativeSelectors) {
     }
     menu = new MenuMorph(this);
     oldInputs = this.inputs();
-    alternativeSelectors.forEach(sel => {
-        var block = SpriteMorph.prototype.blockForSelector(sel);
-        block.restoreInputs(oldInputs);
+    alternativeSelectors.forEach(alternative => {
+        var block, selector, offset;
+        if (alternative instanceof Array) {
+            selector = alternative[0];
+            offset = -alternative[1];
+        } else {
+            selector = alternative;
+            offset = 0;
+        }
+        block = SpriteMorph.prototype.blockForSelector(selector, true);
+        block.restoreInputs(oldInputs, offset);
         block.fixBlockColor(null, true);
         block.addShadow(new Point(3, 3));
         menu.addItem(
             block.fullImage(),
-            () => this.setSelector(sel)
+            () => this.setSelector(selector, -offset)
         );
     });
     menu.popup(this.world(), this.bottomLeft().subtract(new Point(
@@ -3196,17 +3188,38 @@ BlockMorph.prototype.relabel = function (alternativeSelectors) {
     )));
 };
 
-BlockMorph.prototype.setSelector = function (aSelector) {
+
+BlockMorph.prototype.setSelector = function (aSelector, inputOffset = 0) {
     // private - used only for relabel()
+    // input offset is optional and can be used to shift the inputs
+    // to be restored
     var oldInputs = this.inputs(),
         scripts = this.parentThatIsA(ScriptsMorph),
         surplus,
-        info;
+        info,
+        slots,
+        i;
     info = SpriteMorph.prototype.blocks[aSelector];
     this.setCategory(info.category);
     this.selector = aSelector;
     this.setSpec(localize(info.spec));
-    surplus = this.restoreInputs(oldInputs);
+    this.defaults = info.defaults || [];
+
+    // restore default values
+    slots = this.inputs();
+    if (slots[0] instanceof MultiArgMorph) {
+        slots[0].setContents(this.defaults);
+        slots[0].defaults = this.defaults;
+    } else {
+        for (i = 0; i < this.defaults.length; i += 1) {
+            if (this.defaults[i] !== null && slots[i].setContents) {
+                slots[i].setContents(this.defaults[i]);
+            }
+        }
+    }
+
+    // restore previous inputs
+    surplus = this.restoreInputs(oldInputs, -inputOffset);
     this.fixLabelColor();
 
     // place surplus blocks on scipts
@@ -3218,19 +3231,37 @@ BlockMorph.prototype.setSelector = function (aSelector) {
     }
 };
 
-BlockMorph.prototype.restoreInputs = function (oldInputs) {
+BlockMorph.prototype.restoreInputs = function (oldInputs, offset = 0) {
     // private - used only for relabel()
     // try to restore my previous inputs when my spec has been changed
     // return an Array of left-over blocks, if any
-    var i = 0,
-        old,
-        nb,
+    // optional offset parameter allows for shifting the range
+    // of inputs to be restored
+    var old, nb, i,
         leftOver = [];
 
-    this.inputs().forEach(inp => {
+    // gather leading surplus blocks
+    for (i = 0; i < offset; i += 1) {
         old = oldInputs[i];
         if (old instanceof ReporterBlockMorph) {
-            this.replaceInput(inp, old.fullCopy());
+            leftOver.push(old);
+        } else if (old instanceof CommandSlotMorph) {
+            nb = old.nestedBlock();
+            if (nb) {
+                leftOver.push(nb);
+            }
+        }
+    }
+
+    // restore matching inputs in their original order
+    this.inputs().forEach(inp => {
+        old = oldInputs[offset];
+        if (old instanceof ReporterBlockMorph) {
+            if (inp instanceof TemplateSlotMorph || inp.isStatic) {
+                leftOver.push(old);
+            } else {
+                this.replaceInput(inp, old.fullCopy());
+            }
         } else if (old && inp instanceof InputSlotMorph) {
             // original - turns empty numberslots to 0:
             // inp.setContents(old.evaluate());
@@ -3247,12 +3278,12 @@ BlockMorph.prototype.restoreInputs = function (oldInputs) {
                 inp.nestedBlock(nb.fullCopy());
             }
         }
-        i += 1;
+        offset += 1;
     });
 
-    // gather surplus blocks
-    for (i; i < oldInputs.length; i += 1) {
-        old = oldInputs[i];
+    // gather trailing surplus blocks
+    for (offset; offset < oldInputs.length; offset += 1) {
+        old = oldInputs[offset];
         if (old instanceof ReporterBlockMorph) {
             leftOver.push(old);
         } else if (old instanceof CommandSlotMorph) {
@@ -4164,7 +4195,7 @@ BlockMorph.prototype.forceNormalColoring = function () {
     var clr = SpriteMorph.prototype.blockColor[this.category];
     this.setColor(clr);
     this.setLabelColor(
-        new Color(255, 255, 255),
+        WHITE,
         clr.darker(this.labelContrast),
         MorphicPreferences.isFlat ? ZERO : this.embossing
     );
@@ -4198,13 +4229,13 @@ BlockMorph.prototype.fixLabelColor = function () {
         var clr = SpriteMorph.prototype.blockColor[this.category];
         if (this.color.eq(clr)) {
             this.setLabelColor(
-                new Color(255, 255, 255),
+                WHITE,
                 clr.darker(this.labelContrast),
                 MorphicPreferences.isFlat ? null : this.embossing
             );
         } else {
             this.setLabelColor(
-                new Color(0, 0, 0),
+                BLACK,
                 clr.lighter(this.zebraContrast)
                     .lighter(this.labelContrast * 2),
                 MorphicPreferences.isFlat ? null : this.embossing.neg()
@@ -4392,7 +4423,7 @@ BlockMorph.prototype.prepareToBeGrabbed = function (hand) {
 };
 
 BlockMorph.prototype.justDropped = function () {
-    this.alpha = 1;
+    delete this.alpha;
     this.allComments().forEach(comment =>
         comment.stopFollowing()
     );
@@ -5566,7 +5597,7 @@ ReporterBlockMorph.prototype.prepareToBeGrabbed = function (handMorph) {
         this.setPosition(oldPos);
     }
     ReporterBlockMorph.uber.prepareToBeGrabbed.call(this, handMorph);
-    this.alpha = 0.85;
+    this.alpha = Math.min(this.alpha, 0.85);
     this.cachedSlotSpec = null;
 };
 
@@ -6159,7 +6190,6 @@ function RingMorph() {
 RingMorph.prototype.init = function () {
     RingMorph.uber.init.call(this);
     this.category = 'other';
-    this.alpha = RingMorph.prototype.alpha;
     this.contrast = RingMorph.prototype.contrast;
     this.setExtent(new Point(200, 80));
 };
@@ -6352,7 +6382,7 @@ ScriptsMorph.prototype.cleanUpSpacing = 15;
 ScriptsMorph.prototype.isPreferringEmptySlots = true;
 ScriptsMorph.prototype.enableKeyboard = true;
 ScriptsMorph.prototype.enableNestedAutoWrapping = true;
-ScriptsMorph.prototype.feedbackColor = new Color(255, 255, 255);
+ScriptsMorph.prototype.feedbackColor = WHITE;
 
 // ScriptsMorph instance creation:
 
@@ -7939,7 +7969,6 @@ function RingCommandSlotMorph() {
 RingCommandSlotMorph.prototype.init = function () {
     RingCommandSlotMorph.uber.init.call(this);
     this.color = new Color(0, 17, 173);
-    this.alpha = RingMorph.prototype.alpha;
     this.contrast = RingMorph.prototype.contrast;
 };
 
@@ -8548,7 +8577,7 @@ InputSlotMorph.prototype.init = function (
     this.constant = null;
 
     InputSlotMorph.uber.init.call(this, null, true);
-    this.color = new Color(255, 255, 255);
+    this.color = WHITE;
     this.add(contents);
     this.add(arrow);
     contents.isEditable = true;
@@ -8691,6 +8720,25 @@ InputSlotMorph.prototype.menuFromDict = function (
        			menu.addLine();
 			    menu.items.push(dial);
             	menu.addLine();
+            } else if (key.indexOf('§_') === 0) {
+                // prefixing a key with '§_' only makes the menu item
+                // appear when the user holds down the shift-key
+                // use with care because mobile devices might only
+                // have a "soft" keyboard that isn't always there
+                if (this.world().currentKey === 16) { // shift
+                    menu.addItem(
+                        key.slice(2),
+                        choices[key],
+                        null, // hint
+                        null, // color
+                        null, // bold
+                        true, // italic
+                        null, // doubleClickAction
+                        null, // shortcut
+                        !(choices[key] instanceof Array) &&
+                            typeof choices[key] !== 'function' // verbatim?
+                    );
+                }
             } else if (key === '__shout__go__') {
                 // show the green flag symbol
                 flag = new SymbolMorph('flag');
@@ -9187,9 +9235,9 @@ InputSlotMorph.prototype.setChoices = function (dict, readonly) {
     if (this.parent instanceof BlockMorph) {
         this.parent.fixLabelColor();
         if (!readonly) {
-            cnts.shadowOffset = new Point();
+            cnts.shadowOffset = ZERO;
             cnts.shadowColor = null;
-            cnts.setColor(new Color(0, 0, 0));
+            cnts.setColor(BLACK);
         }
     }
     this.fixLayout();
@@ -9207,10 +9255,10 @@ InputSlotMorph.prototype.fixLayout = function () {
     contents.isEditable = (!this.isReadOnly);
     if (this.isReadOnly) {
         contents.disableSelecting();
-        contents.color = new Color(255, 255, 255);
+        contents.color = WHITE;
     } else {
         contents.enableSelecting();
-        contents.color = new Color(0, 0, 0);
+        contents.color = BLACK;
     }
 
     if (this.choices) {
@@ -10457,7 +10505,7 @@ ArrowMorph.prototype.init = function (direction, size, padding, color) {
     this.padding = padding || 0;
 
     ArrowMorph.uber.init.call(this);
-    this.color = color || new Color(0, 0, 0);
+    this.color = color || BLACK;
     this.bounds.setWidth(this.size);
     this.bounds.setHeight(this.size);
     this.rerender();
@@ -10549,7 +10597,7 @@ TextSlotMorph.prototype.init = function (
     this.constant = null;
 
     InputSlotMorph.uber.init.call(this, null, null, null, null, true); // sil.
-    this.color = new Color(255, 255, 255);
+    this.color = WHITE;
     this.add(contents);
     this.add(arrow);
     contents.isEditable = true;
@@ -11327,7 +11375,7 @@ ArgLabelMorph.prototype.fixLayout = function () {
 
     if (this.parent) {
         this.color = this.parent.color;
-        shadowOffset = label.shadowOffset || new Point();
+        shadowOffset = label.shadowOffset || ZERO;
 
         // determine the shadow color for zebra coloring:
         if (shadowOffset.x < 0) {
@@ -11885,7 +11933,6 @@ function RingReporterSlotMorph(isPredicate) {
 
 RingReporterSlotMorph.prototype.init = function (isPredicate) {
     RingReporterSlotMorph.uber.init.call(this, isPredicate, true);
-    this.alpha = RingMorph.prototype.alpha;
     this.contrast = RingMorph.prototype.contrast;
 };
 

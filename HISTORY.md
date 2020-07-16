@@ -2,7 +2,30 @@
 
 ## in development:
 
-## 6.0.0 beta:
+### 2020-07-15
+* morphic: made keyboard handler (more) invisible, thanks, Bernat!
+* gui: made remaining synchronous http requests asynch (url: #open, #run)
+* morphic, gui: switch to scripts tab when dragging a block into the editor pane
+* blocks: refactored transparency handling for syntax elements
+
+### 2020-07-13
+* paint, symbols: new iconic buttons for grow, shrink and flip actions, thanks, Jadga!
+* sketch: tweaked layout to match the paint editor's
+* fixed shift-key constrain mode and "clear" in paint and vector editors, thanks, Joan!
+
+### 2020-07-10
+* morphic: prevent the browser from hijacking cmd-d/f/i/p/s key events
+* added migration guide for Morphic2/Snap!6
+* updated Eisenbergification library, thanks, Brian!
+
+### 2020-07-09
+* new dev version
+* threads: fixed FOR EACH for hybrid lists, thanks, Brian!
+* threads: fixed script execution behavior when turning turbo mode off programmatically, thanks, Jadga, for reporting it.
+* locale: added English translation for 'length of %s' to 'length of text %s' to avoid confusion among both blocks
+* updated German translation for  'length of %s'
+
+## 6.0.0:
 * **New Features:**
     * new Morphic architecture, faster loading, smaller memory footprint, mobile-friendly
     * hyper-blocks
@@ -14,6 +37,10 @@
     * blockify lists / tables with atomic values in watchers
     * extended libraries (APL, thanks, Brian) and programmatic handling of variables (thanks, Joan)
     * "result pic..." context menu entry for reporters (used to be hidden "script pic with result..." option)
+    * more block relabelling options, e.g. for loops
+    * prefix keys in custom drop-down menus with '§_' to only show them if the shift-key is pressed
+    * new "id" option in the monadic function reporter primitive (hyperizable to support deep copies of nested lists)
+    * new api for creating new lists for embedded Snap sessions
 * **Notable Changes:**
     * repeated WARPs inside loops have been sped up
     * duplicated blocks / scripts are grabbed by their top-left corner rather than their center
@@ -32,12 +59,16 @@
     * fixed editing cells in multi-page list watchers
     * recursive calls to "broadcast and wait" execute smoothly again
     * expanding a collapsed comment or clicking on it now brings it to the front
+    * long project titles no longer overlap other buttons in the control bar
+    * "empty" continuations referring to the end of a script no longer throw an error.
 * **Translation Updates:**
     * New Hebrew translation
     * Ukranian
     * Catalan
     * Portuguese
+    * Chinese
     * Japanese
+    * Bengali
     * German
 
 ## 5.4.5:

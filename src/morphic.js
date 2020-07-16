@@ -302,7 +302,7 @@
     -------------------
     If you wish to create a web page with more than one world, make
     sure to prevent each world from auto-filling the whole page and
-    include    it in the main loop. It's also a good idea to give each
+    include it in the main loop. It's also a good idea to give each
     world its own tabindex:
 
     example html file:
@@ -479,7 +479,7 @@
 
         MyMorph.prototype.mouseMove = function(pos) {};
 
-    All of these methods have as optional parameter a Point object
+    Most of these methods have as optional parameter a Point object
     indicating the current position of the Hand inside the World's
     coordinate system. The
 
@@ -488,6 +488,14 @@
     event method has an additional optional parameter indicating the
     currently pressed mouse button, which is either 'left' or 'right'.
     You can use this to let users interact with 3D environments.
+
+    The
+
+        mouseEnterDragging(morph)
+        mouseLeaveDragging(morph)
+
+    event methods have as optional parameter the morph currently dragged by
+    the Hand, if any.
 
     Events may be "bubbled" up a morph's owner chain by calling
 
@@ -1268,12 +1276,17 @@
 
 /*global window, HTMLCanvasElement, FileReader, Audio, FileList, Map*/
 
-var morphicVersion = '2020-June-13';
+var morphicVersion = '2020-July-15';
 var modules = {}; // keep track of additional loaded modules
 var useBlurredShadows = true;
 
 const ZERO = new Point();
+const BLACK = new Color();
+const WHITE = new Color(255, 255, 255);
+
 Object.freeze(ZERO);
+Object.freeze(BLACK);
+Object.freeze(WHITE);
 
 var standardSettings = {
     minimumFontHeight: getMinimumFontHeight(), // browser settings
@@ -2271,7 +2284,7 @@ Color.prototype.lighter = function (percent) {
     if (percent) {
         fract = (100 - percent) / 100;
     }
-    return this.mixed(fract, new Color(255, 255, 255));
+    return this.mixed(fract, WHITE);
 };
 
 Color.prototype.dansDarker = function () {
@@ -2533,7 +2546,7 @@ Point.prototype.translateBy = function (deltaPoint) {
 };
 
 Point.prototype.rotateBy = function (angle, centerPoint) {
-    var center = centerPoint || new Point(0, 0),
+    var center = centerPoint || ZERO,
         p = this.subtract(center),
         r = p.r(),
         theta = angle - p.theta();
@@ -4685,7 +4698,7 @@ HandleMorph.prototype.init = function (
     this.type =  type || 'resize'; // also: 'move', 'moveCenter', 'movePivot'
     this.isHighlighted = false;
     HandleMorph.uber.init.call(this);
-    this.color = new Color(255, 255, 255);
+    this.color = WHITE;
     this.isDraggable = false;
     if (this.type === 'movePivot') {
         size *= 2;
@@ -4726,7 +4739,7 @@ HandleMorph.prototype.render = function (ctx) {
             this.renderHandleOn(
                 ctx,
                 new Color(100, 100, 255),
-                new Color(255, 255, 255)
+                WHITE
             );
         } else {
             this.renderHandleOn(
@@ -5236,7 +5249,7 @@ ColorPaletteMorph.prototype.render = function (ctx) {
     var ext = this.extent(),
         x, y, h, l;
 
-    this.choice = new Color();
+    this.choice = BLACK;
     for (x = 0; x <= ext.x; x += 1) {
         h = 360 * x / ext.x;
         for (y = 0; y <= ext.y; y += 1) {
@@ -5338,7 +5351,7 @@ GrayPaletteMorph.prototype.render = function (ctx) {
     var ext = this.extent(),
         gradient;
 
-    this.choice = new Color();
+    this.choice = BLACK;
     gradient = ctx.createLinearGradient(0, 0, ext.x, ext.y);
     gradient.addColorStop(0, 'black');
     gradient.addColorStop(1, 'white');
@@ -5357,13 +5370,13 @@ ColorPickerMorph.uber = Morph.prototype;
 // ColorPickerMorph instance creation:
 
 function ColorPickerMorph(defaultColor) {
-    this.init(defaultColor || new Color(255, 255, 255));
+    this.init(defaultColor || WHITE);
 }
 
 ColorPickerMorph.prototype.init = function (defaultColor) {
     this.choice = defaultColor;
     ColorPickerMorph.uber.init.call(this);
-    this.color = new Color(255, 255, 255);
+    this.color = WHITE;
     this.setExtent(new Point(80, 80));
 };
 
@@ -5799,7 +5812,7 @@ function BoxMorph(edge, border, borderColor) {
 BoxMorph.prototype.init = function (edge, border, borderColor) {
     this.edge = edge || 4;
     this.border = border || ((border === 0) ? 0 : 2);
-    this.borderColor = borderColor || new Color();
+    this.borderColor = borderColor || BLACK;
     BoxMorph.uber.init.call(this);
 };
 
@@ -7315,8 +7328,8 @@ MouseSensorMorph.prototype.init = function (edge, border, borderColor) {
     MouseSensorMorph.uber.init.call(this);
     this.edge = edge || 4;
     this.border = border || 2;
-    this.color = new Color(255, 255, 255);
-    this.borderColor = borderColor || new Color();
+    this.color = WHITE;
+    this.borderColor = borderColor || BLACK;
     this.isTouched = false;
     this.upStep = 0.05;
     this.downStep = 0.02;
@@ -7475,7 +7488,7 @@ InspectorMorph.prototype.buildPanes = function () {
     this.label = new TextMorph(this.target.toString());
     this.label.fontSize = MorphicPreferences.menuFontSize;
     this.label.isBold = true;
-    this.label.color = new Color(255, 255, 255);
+    this.label.color = WHITE;
     this.add(this.label);
 
     // properties list
@@ -7541,7 +7554,7 @@ InspectorMorph.prototype.buildPanes = function () {
     this.detail.acceptsDrops = false;
     this.detail.contents.acceptsDrops = false;
     this.detail.isTextLineWrapping = true;
-    this.detail.color = new Color(255, 255, 255);
+    this.detail.color = WHITE;
     this.detail.hBar.alpha = 0.6;
     this.detail.vBar.alpha = 0.6;
     ctrl = new TextMorph('');
@@ -7558,7 +7571,7 @@ InspectorMorph.prototype.buildPanes = function () {
         this.work.acceptsDrops = false;
         this.work.contents.acceptsDrops = false;
         this.work.isTextLineWrapping = true;
-        this.work.color = new Color(255, 255, 255);
+        this.work.color = WHITE;
         this.work.hBar.alpha = 0.6;
         this.work.vBar.alpha = 0.6;
         ev = new TextMorph('');
@@ -7979,7 +7992,7 @@ MenuMorph.prototype.createLabel = function () {
         'center'
     );
     text.alignment = 'center';
-    text.color = new Color(255, 255, 255);
+    text.color = WHITE;
     text.backgroundColor = this.borderColor;
     text.fixLayout();
     this.label = new BoxMorph(3, 0);
@@ -8006,7 +8019,7 @@ MenuMorph.prototype.createItems = function () {
         this.edge = MorphicPreferences.isFlat ? 0 : 5;
         this.border = MorphicPreferences.isFlat ? 1 : 2;
     }
-    this.color = new Color(255, 255, 255);
+    this.color = WHITE;
     this.borderColor = new Color(60, 60, 60);
     this.setExtent(new Point(0, 0));
 
@@ -8432,7 +8445,7 @@ StringMorph.prototype.init = function (
     this.enableLinks = false; // set to "true" if I can contain clickable URLs
     this.isNumeric = isNumeric || false;
     this.isPassword = false;
-    this.shadowOffset = shadowOffset || new Point(0, 0);
+    this.shadowOffset = shadowOffset || ZERO;
     this.shadowColor = shadowColor || null;
     this.isShowingBlanks = false;
     this.blanksColor = new Color(180, 140, 140);
@@ -8442,7 +8455,7 @@ StringMorph.prototype.init = function (
     this.currentlySelecting = false;
     this.startMark = 0;
     this.endMark = 0;
-    this.markedTextColor = new Color(255, 255, 255);
+    this.markedTextColor = WHITE;
     this.markedBackgoundColor = new Color(60, 60, 120);
 
     // initialize inherited properties:
@@ -8488,7 +8501,7 @@ StringMorph.prototype.font = function () {
 StringMorph.prototype.fixLayout = function (justMe) {
     // determine my extent depending on my current settings
     var width,
-        shadowOffset = this.shadowOffset || new Point(),
+        shadowOffset = this.shadowOffset || ZERO,
         txt = this.isPassword ?
             this.password('*', this.text.length) : this.text;
 
@@ -8514,7 +8527,7 @@ StringMorph.prototype.fixLayout = function (justMe) {
 
 StringMorph.prototype.render = function (ctx) {
     var start, stop, i, p, c, x, y,
-        shadowOffset = this.shadowOffset || new Point(),
+        shadowOffset = this.shadowOffset || ZERO,
         txt = this.isPassword ?
                 this.password('*', this.text.length) : this.text;
 
@@ -9130,7 +9143,7 @@ TextMorph.prototype.init = function (
     this.isBold = bold || false;
     this.isItalic = italic || false;
     this.alignment = alignment || 'left';
-    this.shadowOffset = shadowOffset || new Point(0, 0);
+    this.shadowOffset = shadowOffset || ZERO;
     this.shadowColor = shadowColor || null;
     this.maxWidth = width || 0;
     this.maxLineWidth = 0;
@@ -9146,7 +9159,7 @@ TextMorph.prototype.init = function (
     this.currentlySelecting = false;
     this.startMark = 0;
     this.endMark = 0;
-    this.markedTextColor = new Color(255, 255, 255);
+    this.markedTextColor = WHITE;
     this.markedBackgoundColor = new Color(60, 60, 120);
 
     // initialize inherited properties:
@@ -9694,7 +9707,7 @@ TriggerMorph.prototype.init = function (
     TriggerMorph.uber.init.call(this);
 
     // override inherited properites:
-    this.color = new Color(255, 255, 255);
+    this.color = WHITE;
     this.createLabel();
 };
 
@@ -10741,7 +10754,7 @@ ListMorph.prototype.init = function (
     ListMorph.uber.init.call(this);
 
     this.contents.acceptsDrops = false;
-    this.color = new Color(255, 255, 255);
+    this.color = WHITE;
     this.hBar.alpha = 0.6;
     this.vBar.alpha = 0.6;
     this.elements = elements || [];
@@ -10882,7 +10895,7 @@ StringFieldMorph.prototype.init = function (
     this.isNumeric = isNumeric || false;
     this.text = null;
     StringFieldMorph.uber.init.call(this);
-    this.color = new Color(255, 255, 255);
+    this.color = WHITE;
     this.isEditable = true;
     this.acceptsDrops = false;
     this.createText();
@@ -11062,7 +11075,7 @@ HandMorph.prototype.changed = function () {
     var b;
     if (this.world !== null) {
         b = this.cachedFullBounds || this.fullBounds();
-        if (!b.extent().eq(new Point())) {
+        if (!b.extent().eq(ZERO)) {
             this.world.broken.push(b.spread());
         }
     }
@@ -11418,7 +11431,7 @@ HandMorph.prototype.processMouseMove = function (event) {
                 old.mouseLeave();
             }
             if (old.mouseLeaveDragging && this.mouseButton) {
-                old.mouseLeaveDragging();
+                old.mouseLeaveDragging(this.children[0]);
             }
         }
     });
@@ -11428,7 +11441,7 @@ HandMorph.prototype.processMouseMove = function (event) {
                 newMorph.mouseEnter();
             }
             if (newMorph.mouseEnterDragging && this.mouseButton) {
-                newMorph.mouseEnterDragging();
+                newMorph.mouseEnterDragging(this.children[0]);
             }
         }
 
@@ -11904,11 +11917,13 @@ WorldMorph.prototype.initKeyboardHandler = function () {
     kbd = document.createElement('textarea');
     kbd.setAttribute('id', 'morphic_keyboard');
     kbd.setAttribute('style', 'caret-color:transparent;');
+    kbd.style.position = 'absolute';
+    kbd.style.overflow = "hidden";
+    kbd.style.border = 'none';
+    kbd.style.resize = 'none';
+    kbd.wrap = "off";
     kbd.world = this;
     kbd.style.zIndex = -1;
-    kbd.style.position = 'absolute';
-    kbd.wrap = "off";
-    kbd.style.overflow = "hidden";
     kbd.autofocus = true;
     document.body.appendChild(kbd);
     this.keyboardHandler = kbd;
@@ -11926,13 +11941,18 @@ WorldMorph.prototype.initKeyboardHandler = function () {
                     kbd.world.keyboardFocus.processKeyDown) {
                 kbd.world.keyboardFocus.processKeyDown(event);
             }
-            // supress tab override and make sure tab gets
+            // suppress tab override and make sure tab gets
             // received by all browsers
             if (event.keyCode === 9) {
                 if (kbd.world.keyboardFocus &&
                         kbd.world.keyboardFocus.processKeyPress) {
                     kbd.world.keyboardFocus.processKeyPress(event);
                 }
+                event.preventDefault();
+            }
+            // suppress cmd-d/f/i/p/s override
+            if ((event.ctrlKey || event.metaKey) &&
+                    'dfips'.includes(event.key)) {
                 event.preventDefault();
             }
         },
@@ -12063,7 +12083,7 @@ WorldMorph.prototype.initEventListeners = function () {
     canvas.addEventListener(
         "touchmove",
         event => this.hand.processTouchMove(event),
-        false
+        {passive: true}
     );
 
     canvas.addEventListener(

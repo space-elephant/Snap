@@ -71,14 +71,14 @@ InputSlotDialogMorph, ScriptsMorph, isNil, SymbolMorph, fontHeight,  localize,
 BlockExportDialogMorph, BlockImportDialogMorph, SnapTranslator, List, ArgMorph,
 Uint8Array, HandleMorph, SVG_Costume, TableDialogMorph, CommentMorph, saveAs,
 CommandBlockMorph, BooleanSlotMorph, RingReporterSlotMorph, ScriptFocusMorph,
-BlockLabelPlaceHolderMorph, SpeechBubbleMorph, XML_Element, WatcherMorph,
+BlockLabelPlaceHolderMorph, SpeechBubbleMorph, XML_Element, WatcherMorph, WHITE,
 BlockRemovalDialogMorph,TableMorph, isSnapObject, isRetinaEnabled, SliderMorph,
 disableRetinaSupport, enableRetinaSupport, isRetinaSupported, MediaRecorder,
-Animation, BoxMorph, BlockEditorMorph, BlockDialogMorph, Note*/
+Animation, BoxMorph, BlockEditorMorph, BlockDialogMorph, Note, ZERO, BLACK*/
 
 // Global stuff ////////////////////////////////////////////////////////
 
-modules.gui = '2020-June-08';
+modules.gui = '2020-July-15';
 
 // Declarations
 
@@ -125,14 +125,14 @@ IDE_Morph.prototype.setDefaultDesign = function () {
     IDE_Morph.prototype.groupColor
         = SpriteMorph.prototype.paletteColor.lighter(5);
     IDE_Morph.prototype.sliderColor = SpriteMorph.prototype.sliderColor;
-    IDE_Morph.prototype.buttonLabelColor = new Color(255, 255, 255);
+    IDE_Morph.prototype.buttonLabelColor = WHITE;
     IDE_Morph.prototype.tabColors = [
         IDE_Morph.prototype.groupColor.darker(50),
         IDE_Morph.prototype.groupColor.darker(25),
         IDE_Morph.prototype.groupColor
     ];
     IDE_Morph.prototype.rotationStyleColors = IDE_Morph.prototype.tabColors;
-    IDE_Morph.prototype.appModeColor = new Color();
+    IDE_Morph.prototype.appModeColor = BLACK;
     IDE_Morph.prototype.scriptsPaneTexture = this.scriptsTexture();
     IDE_Morph.prototype.padding = 1;
 
@@ -146,12 +146,12 @@ IDE_Morph.prototype.setDefaultDesign = function () {
         = IDE_Morph.prototype.buttonLabelColor;
 
     SyntaxElementMorph.prototype.contrast = 65;
-    ScriptsMorph.prototype.feedbackColor = new Color(255, 255, 255);
+    ScriptsMorph.prototype.feedbackColor = WHITE;
 };
 
 IDE_Morph.prototype.setFlatDesign = function () {
     MorphicPreferences.isFlat = true;
-    SpriteMorph.prototype.paletteColor = new Color(255, 255, 255);
+    SpriteMorph.prototype.paletteColor = WHITE;
     SpriteMorph.prototype.paletteTextColor = new Color(70, 70, 70);
     StageMorph.prototype.paletteTextColor
         = SpriteMorph.prototype.paletteTextColor;
@@ -162,7 +162,7 @@ IDE_Morph.prototype.setFlatDesign = function () {
     IDE_Morph.prototype.backgroundColor = new Color(220, 220, 230);
     IDE_Morph.prototype.frameColor = new Color(240, 240, 245);
 
-    IDE_Morph.prototype.groupColor = new Color(255, 255, 255);
+    IDE_Morph.prototype.groupColor = WHITE;
     IDE_Morph.prototype.sliderColor = SpriteMorph.prototype.sliderColor;
     IDE_Morph.prototype.buttonLabelColor = new Color(70, 70, 70);
     IDE_Morph.prototype.tabColors = [
@@ -336,21 +336,6 @@ IDE_Morph.prototype.openIn = function (world) {
 
     this.reactToWorldResize(world.bounds);
 
-    function getURL(url) {
-        try {
-            var request = new XMLHttpRequest();
-            request.open('GET', url, false);
-            request.send();
-            if (request.status === 200) {
-                return request.responseText;
-            }
-            throw new Error('unable to retrieve ' + url);
-        } catch (err) {
-            myself.showMessage('unable to retrieve project');
-            return '';
-        }
-    }
-
     function applyFlags(dict) {
         if (dict.embedMode) {
             myself.setEmbedMode();
@@ -415,7 +400,37 @@ IDE_Morph.prototype.openIn = function (world) {
                     hash = hash.slice(0, idx);
                     applyFlags(dict);
                 }
-                this.droppedText(getURL(hash));
+                this.shield = new Morph();
+                this.shield.alpha = 0;
+                this.shield.setExtent(this.parent.extent());
+                this.parent.add(this.shield);
+                this.showMessage('Fetching project...');
+
+                this.getURL(
+                    hash,
+                    projectData => {
+                        var msg;
+                        this.nextSteps([
+                            () => msg = this.showMessage('Opening project...'),
+                            () => {
+                                if (projectData.indexOf('<snapdata') === 0) {
+                                    this.rawOpenCloudDataString(projectData);
+                                } else if (
+                                    projectData.indexOf('<project') === 0
+                                ) {
+                                    this.rawOpenProjectString(projectData);
+                                }
+                                this.hasChangedMedia = true;
+                            },
+                            () => {
+                                this.shield.destroy();
+                                this.shield = null;
+                                msg.destroy();
+                                this.toggleAppMode(false);
+                            }
+                        ]);
+                    }
+                );
             }
         } else if (location.hash.substr(0, 5) === '#run:') {
             hash = location.hash.substr(5);
@@ -429,10 +444,45 @@ IDE_Morph.prototype.openIn = function (world) {
             }
             if (hash.substr(0, 8) === '<project>') {
                 this.rawOpenProjectString(hash);
+                applyFlags(myself.cloud.parseDict(location.hash.substr(5)));
             } else {
-                this.rawOpenProjectString(getURL(hash));
+                this.shield = new Morph();
+                this.shield.alpha = 0;
+                this.shield.setExtent(this.parent.extent());
+                this.parent.add(this.shield);
+                this.showMessage('Fetching project...');
+
+                this.getURL(
+                    hash,
+                    projectData => {
+                        var msg;
+                        this.nextSteps([
+                            () => msg = this.showMessage('Opening project...'),
+                            () => {
+                                if (projectData.indexOf('<snapdata') === 0) {
+                                    this.rawOpenCloudDataString(projectData);
+                                } else if (
+                                    projectData.indexOf('<project') === 0
+                                ) {
+                                    this.rawOpenProjectString(projectData);
+                                }
+                                this.hasChangedMedia = true;
+                            },
+                            () => {
+                                this.shield.destroy();
+                                this.shield = null;
+                                msg.destroy();
+                                // this.toggleAppMode(true);
+                                applyFlags(
+                                    this.cloud.parseDict(
+                                        location.hash.substr(5)
+                                    )
+                                );
+                            }
+                        ]);
+                    }
+                );
             }
-            applyFlags(myself.cloud.parseDict(location.hash.substr(5)));
         } else if (location.hash.substr(0, 9) === '#present:') {
             this.shield = new Morph();
             this.shield.color = this.color;
@@ -676,7 +726,7 @@ IDE_Morph.prototype.createLogo = function () {
         myself.snapMenu();
     };
 
-    this.logo.color = new Color();
+    this.logo.color = BLACK;
     this.logo.setExtent(new Point(200, 28)); // dimensions are fixed
     this.add(this.logo);
 };
@@ -742,7 +792,7 @@ IDE_Morph.prototype.createControlBar = function () {
     button.labelShadowOffset = new Point(-1, -1);
     button.labelShadowColor = colors[1];
     button.labelColor = MorphicPreferences.isFlat ?
-        new Color(255, 255, 255)
+        WHITE
         : this.buttonLabelColor;
     button.contrast = this.buttonContrast;
     // button.hint = 'stage size\nsmall & normal';
@@ -1076,7 +1126,8 @@ IDE_Morph.prototype.createControlBar = function () {
 
     this.controlBar.updateLabel = function () {
         var suffix = myself.world().isDevMode ?
-                ' - ' + localize('development mode') : '';
+                ' - ' + localize('development mode') : '',
+            txt;
 
         if (this.label) {
             this.label.destroy();
@@ -1084,8 +1135,7 @@ IDE_Morph.prototype.createControlBar = function () {
         if (myself.isAppMode) {
             return;
         }
-
-        this.label = new StringMorph(
+        txt = new StringMorph(
             (myself.projectName || localize('untitled')) + suffix,
             14,
             'sans-serif',
@@ -1095,11 +1145,22 @@ IDE_Morph.prototype.createControlBar = function () {
             MorphicPreferences.isFlat ? null : new Point(2, 1),
             myself.frameColor.darker(myself.buttonContrast)
         );
-        this.label.color = myself.buttonLabelColor;
-        this.label.fixLayout();
-        this.add(this.label);
+        txt.color = myself.buttonLabelColor;
+
+        this.label = new FrameMorph();
+        this.label.acceptsDrops = false;
+        this.label.alpha = 0;
+        txt.setPosition(this.label.position());
+        this.label.add(txt);
+        this.label.setExtent(
+            new Point(
+                steppingButton.left() - settingsButton.right() - padding * 2,
+                txt.height()
+            )
+        );
         this.label.setCenter(this.center());
         this.label.setLeft(this.settingsButton.right() + padding);
+        this.add(this.label);
     };
 };
 
@@ -1146,7 +1207,7 @@ IDE_Morph.prototype.createCategories = function () {
         button.labelShadowColor = colors[1];
         button.labelColor = myself.buttonLabelColor;
         if (MorphicPreferences.isFlat) {
-            button.labelPressColor = new Color(255, 255, 255);
+            button.labelPressColor = WHITE;
         }
         button.fixLayout();
         button.refresh();
@@ -1433,8 +1494,8 @@ IDE_Morph.prototype.createSpriteBar = function () {
     padlock.pressColor = tabColors[1];
 
     padlock.tick.shadowOffset = MorphicPreferences.isFlat ?
-            new Point() : new Point(-1, -1);
-    padlock.tick.shadowColor = new Color(); // black
+            ZERO : new Point(-1, -1);
+    padlock.tick.shadowColor = BLACK;
     padlock.tick.color = this.buttonLabelColor;
     padlock.tick.isBold = false;
     padlock.tick.fixLayout();
@@ -1563,6 +1624,12 @@ IDE_Morph.prototype.createSpriteEditor = function () {
 
         this.spriteEditor.acceptsDrops = false;
         this.spriteEditor.contents.acceptsDrops = false;
+
+        this.spriteEditor.contents.mouseEnterDragging = (morph) => {
+            if (morph instanceof BlockMorph) {
+                this.spriteBar.tabBar.tabTo('scripts');
+            }
+        }
     } else if (this.currentTab === 'sounds') {
         this.spriteEditor = new JukeboxMorph(
             this.currentSprite,
@@ -1573,6 +1640,12 @@ IDE_Morph.prototype.createSpriteEditor = function () {
         this.spriteEditor.updateSelection();
         this.spriteEditor.acceptDrops = false;
         this.spriteEditor.contents.acceptsDrops = false;
+
+        this.spriteEditor.contents.mouseEnterDragging = (morph) => {
+            if (morph instanceof BlockMorph) {
+                this.spriteBar.tabBar.tabTo('scripts');
+            }
+        }
     } else {
         this.spriteEditor = new Morph();
         this.spriteEditor.color = this.groupColor;
@@ -3870,7 +3943,7 @@ IDE_Morph.prototype.aboutSnap = function () {
         module, btn1, btn2, btn3, btn4, licenseBtn, translatorsBtn,
         world = this.world();
 
-    aboutTxt = 'Snap! 6.0.0 - beta -\nBuild Your Own Blocks\n\n'
+    aboutTxt = 'Snap! 6.0.1 - dev -\nBuild Your Own Blocks\n\n'
         + 'Copyright \u24B8 2008-2020 Jens M\u00F6nig and '
         + 'Brian Harvey\n'
         + 'jens@moenig.org, bh@cs.berkeley.edu\n\n'
@@ -3956,7 +4029,7 @@ IDE_Morph.prototype.aboutSnap = function () {
                 null,
                 null,
                 MorphicPreferences.isFlat ? null : new Point(1, 1),
-                new Color(255, 255, 255)
+                WHITE
             ),
             scroller,
             maxHeight = world.height() - dlg.titleFontSize * 10;
@@ -6141,6 +6214,7 @@ IDE_Morph.prototype.getURL = function (url, callback, responseType) {
                             request[rsp]
                         );
                     } else {
+                        this.showMessage('unable to retrieve ' + url);
                         throw new Error('unable to retrieve ' + url);
                     }
                 }
@@ -6228,7 +6302,7 @@ IDE_Morph.prototype.warnAboutIE = function () {
             null,
             null,
             MorphicPreferences.isFlat ? null : new Point(1, 1),
-            new Color(255, 255, 255)
+            WHITE
         );
 
         dlg.key = 'IE-Warning';
@@ -6329,7 +6403,7 @@ ProjectDialogMorph.prototype.buildContents = function () {
             null, // width
             null, // font name
             new Point(1, 1), // shadow offset
-            new Color(255, 255, 255) // shadowColor
+            WHITE // shadowColor
         );
         notification.refresh = nop;
         this.srcBar.add(notification);
@@ -6539,7 +6613,7 @@ ProjectDialogMorph.prototype.addSourceButton = function (
             null,
             null,
             new Point(1, 1),
-            new Color(255, 255, 255)
+            WHITE
         ),
         lbl2 = new StringMorph(
             label,
@@ -6550,7 +6624,7 @@ ProjectDialogMorph.prototype.addSourceButton = function (
             null,
             new Point(-1, -1),
             this.titleBarColor.darker(50),
-            new Color(255, 255, 255)
+            WHITE
         ),
         l1 = new Morph(),
         l2 = new Morph(),
@@ -6573,7 +6647,7 @@ ProjectDialogMorph.prototype.addSourceButton = function (
     lbl2.add(new SymbolMorph(
         symbol,
         24,
-        new Color(255, 255, 255),
+        WHITE,
         new Point(-1, -1),
         this.titleBarColor.darker(50)
     ));
@@ -7921,7 +7995,7 @@ SpriteIconMorph.uber = ToggleButtonMorph.prototype;
 SpriteIconMorph.prototype.thumbSize = new Point(40, 40);
 SpriteIconMorph.prototype.labelShadowOffset = null;
 SpriteIconMorph.prototype.labelShadowColor = null;
-SpriteIconMorph.prototype.labelColor = new Color(255, 255, 255);
+SpriteIconMorph.prototype.labelColor = WHITE;
 SpriteIconMorph.prototype.fontSize = 9;
 
 // SpriteIconMorph instance creation:
@@ -8365,7 +8439,7 @@ CostumeIconMorph.uber = ToggleButtonMorph.prototype;
 CostumeIconMorph.prototype.thumbSize = new Point(80, 60);
 CostumeIconMorph.prototype.labelShadowOffset = null;
 CostumeIconMorph.prototype.labelShadowColor = null;
-CostumeIconMorph.prototype.labelColor = new Color(255, 255, 255);
+CostumeIconMorph.prototype.labelColor = WHITE;
 CostumeIconMorph.prototype.fontSize = 9;
 
 // CostumeIconMorph instance creation:
@@ -8614,7 +8688,7 @@ TurtleIconMorph.uber = ToggleButtonMorph.prototype;
 TurtleIconMorph.prototype.thumbSize = new Point(80, 60);
 TurtleIconMorph.prototype.labelShadowOffset = null;
 TurtleIconMorph.prototype.labelShadowColor = null;
-TurtleIconMorph.prototype.labelColor = new Color(255, 255, 255);
+TurtleIconMorph.prototype.labelColor = WHITE;
 TurtleIconMorph.prototype.fontSize = 9;
 
 // TurtleIconMorph instance creation:
@@ -9035,7 +9109,7 @@ SoundIconMorph.uber = ToggleButtonMorph.prototype;
 SoundIconMorph.prototype.thumbSize = new Point(80, 60);
 SoundIconMorph.prototype.labelShadowOffset = null;
 SoundIconMorph.prototype.labelShadowColor = null;
-SoundIconMorph.prototype.labelColor = new Color(255, 255, 255);
+SoundIconMorph.prototype.labelColor = WHITE;
 SoundIconMorph.prototype.fontSize = 9;
 
 // SoundIconMorph instance creation:

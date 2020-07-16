@@ -58,10 +58,10 @@ MultiArgMorph, Point, ReporterBlockMorph, SyntaxElementMorph, contains, Costume,
 degrees, detect, nop, radians, ReporterSlotMorph, CSlotMorph, RingMorph, Sound,
 IDE_Morph, ArgLabelMorph, localize, XML_Element, hex_sha512, TableDialogMorph,
 StageMorph, SpriteMorph, StagePrompterMorph, Note, modules, isString, copy, Map,
-isNil, WatcherMorph, List, ListWatcherMorph, alert, console, TableMorph, Color,
+isNil, WatcherMorph, List, ListWatcherMorph, alert, console, TableMorph, BLACK,
 TableFrameMorph, ColorSlotMorph, isSnapObject, newCanvas, Symbol, SVG_Costume*/
 
-modules.threads = '2020-June-15';
+modules.threads = '2020-July-09';
 
 var ThreadManager;
 var Process;
@@ -69,6 +69,19 @@ var Context;
 var Variable;
 var VariableFrame;
 var JSCompiler;
+
+const NONNUMBERS = [true, false, ''];
+
+(function () {
+    // "zum Schneckengang verdorben, was Adlerflug geworden wäre"
+    // collecting edge-cases that somebody complained about
+    // on Github. Folks, take it easy and keep it fun, okay?
+    // Shit like this is patently ugly and slows Snap down. Tnx!
+    for (var i = 9; i <= 13; i += 1) {
+        NONNUMBERS.push(String.fromCharCode(i));
+    }
+    NONNUMBERS.push(String.fromCharCode(160));
+})();
 
 function snapEquals(a, b) {
     if (a instanceof List || (b instanceof List)) {
@@ -79,22 +92,11 @@ function snapEquals(a, b) {
     }
 
     var x = +a,
-        y = +b,
-        i,
-        specials = [true, false, ''];
-
-    // "zum Schneckengang verdorben, was Adlerflug geworden wäre"
-    // collecting edge-cases that somebody complained about
-    // on Github. Folks, take it easy and keep it fun, okay?
-    // Shit like this is patently ugly and slows Snap down. Tnx!
-    for (i = 9; i <= 13; i += 1) {
-        specials.push(String.fromCharCode(i));
-    }
-    specials.push(String.fromCharCode(160));
+        y = +b;
 
     // check for special values before coercing to numbers
     if (isNaN(x) || isNaN(y) ||
-            [a, b].some(any => contains(specials, any) ||
+            [a, b].some(any => contains(NONNUMBERS, any) ||
                   (isString(any) && (any.indexOf(' ') > -1)))
     ) {
         x = a;
@@ -606,7 +608,7 @@ function Process(topBlock, receiver, onComplete, yieldFirst) {
 // Process accessing
 
 Process.prototype.isRunning = function () {
-    return (this.context !== null) && (!this.readyToTerminate);
+    return !this.readyToTerminate && (this.context || this.isPaused);
 };
 
 // Process entry points
@@ -1112,7 +1114,9 @@ Process.prototype.evaluate = function (
     args,
     isCommand
 ) {
-    if (!context) {return null; }
+    if (!context) {
+        return this.returnValueToParentContext(null);
+    }
     if (context instanceof Function) {
         // if (!this.enableJS) {
         //     throw new Error('JavaScript is not enabled');
@@ -1358,7 +1362,7 @@ Process.prototype.doStopCustomBlock = function () {
 Process.prototype.doCallCC = function (aContext, isReporter) {
     this.evaluate(
         aContext,
-        new List([this.context.continuation()]),
+        new List([this.context.continuation(isReporter)]),
         !isReporter
     );
 };
@@ -1549,7 +1553,7 @@ Process.prototype.reportGetVar = function () {
 };
 
 Process.prototype.doShowVar = function (varName) {
-    var varFrame = this.context.variables,
+    var varFrame = (this.context || this.homeContext).variables,
         stage,
         watcher,
         target,
@@ -1606,6 +1610,7 @@ Process.prototype.doShowVar = function (varName) {
             }
             stage.add(watcher);
             watcher.fixLayout();
+            watcher.rerender();
         }
     }
 };
@@ -1841,7 +1846,7 @@ Process.prototype.shadowListAttribute = function (list) {
 // Process accessing list elements - hyper dyadic
 
 Process.prototype.reportListItem = function (index, list) {
-    var dim;
+    var rank;
     this.assertType(list, 'list');
     if (index === '') {
         return '';
@@ -1852,9 +1857,9 @@ Process.prototype.reportListItem = function (index, list) {
     if (this.inputOption(index) === 'last') {
         return list.at(list.length());
     }
-    dim = this.dimensionsOf(index);
-    if (dim > 0 && this.enableHyperOps) {
-        if (dim === 1) {
+    rank = this.rank(index);
+    if (rank > 0 && this.enableHyperOps) {
+        if (rank === 1) {
             if (index.isEmpty()) {
                 return list.map(item => item);
             }
@@ -1877,17 +1882,17 @@ Process.prototype.reportItems = function (indices, list) {
     // And look, Ma, it's turned out all beautiful! -jens
 
     return makeSelector(
-        this.dimensionsOf(list),
+        this.rank(list),
         indices.cdr(),
         makeLeafSelector(indices.at(1))
     )(list);
 
-    function makeSelector(dimension, indices, next) {
-        if (dimension === 1) {
+    function makeSelector(rank, indices, next) {
+        if (rank === 1) {
             return next;
         }
         return makeSelector(
-            dimension - 1,
+            rank - 1,
             indices.cdr(),
             makeBranch(
                 indices.at(1) || new List(),
@@ -1913,16 +1918,6 @@ Process.prototype.reportItems = function (indices, list) {
             return indices.map(idx => data.at(idx));
         };
     }
-};
-
-Process.prototype.dimensionsOf = function(aList) {
-    var dim = 0,
-        cur = aList;
-    while (cur instanceof List) {
-        dim += 1;
-        cur = cur.at(1);
-    }
-    return dim;
 };
 
 // Process - other basic list accessors
@@ -2446,7 +2441,7 @@ Process.prototype.doForEach = function (upvar, list, script) {
             this.context.accumulator.source.cdr();
     } else { // arrayed
         this.context.accumulator.idx += 1;
-        next = list.at(this.context.accumulator.idx);
+        next = this.context.accumulator.source.at(this.context.accumulator.idx);
     }
     this.pushContext('doYield');
     this.pushContext();
@@ -3576,10 +3571,6 @@ Process.prototype.hyperDyadic = function (baseOp, a, b) {
     return baseOp(a, b);
 };
 
-Process.prototype.isMatrix = function (value) {
-    return value instanceof List && value.at(1) instanceof List;
-};
-
 Process.prototype.hyperZip = function (baseOp, a, b) {
     // enable dyadic operations to be performed on lists and tables
     var len, i, result;
@@ -3602,6 +3593,22 @@ Process.prototype.hyperZip = function (baseOp, a, b) {
     }
     return baseOp(a, b);
 };
+
+Process.prototype.isMatrix = function (data) {
+    return data instanceof List && data.at(1) instanceof List;
+};
+
+Process.prototype.rank = function(data) {
+    var rank = 0,
+        cur = data;
+    while (cur instanceof List) {
+        rank += 1;
+        cur = cur.at(1);
+    }
+    return rank;
+};
+
+// Process math primtives - arithmetic
 
 Process.prototype.reportSum = function (a, b) {
     return this.hyperDyadic(this.reportBasicSum, a, b);
@@ -3823,6 +3830,8 @@ Process.prototype.reportMonadic = function (fname, n) {
     case '2^':
         result = Math.pow(2, x);
         break;
+    case 'id':
+        return n;
     default:
         nop();
     }
@@ -4563,7 +4572,7 @@ Process.prototype.colorAtSprite = function (sprite) {
         child,
         i;
 
-    if (!stage) {return new Color(); }
+    if (!stage) {return BLACK; }
     for (i = stage.children.length; i > 0; i -= 1) {
         child = stage.children[i - 1];
         if ((child !== sprite) &&
@@ -4577,7 +4586,7 @@ Process.prototype.colorAtSprite = function (sprite) {
     if (stage.bounds.containsPoint(point)) {
         return stage.getPixelColor(point);
     }
-    return new Color();
+    return BLACK;
 };
 
 Process.prototype.colorBelowSprite = function (sprite) {
@@ -4593,7 +4602,7 @@ Process.prototype.colorBelowSprite = function (sprite) {
         child,
         i;
 
-    if (!stage) {return new Color(); }
+    if (!stage) {return BLACK; }
     for (i = 0; i < stage.children.length; i += 1) {
         if (!found) {
             child = stage.children[i];
@@ -4610,7 +4619,7 @@ Process.prototype.colorBelowSprite = function (sprite) {
     if (below.bounds.containsPoint(point)) {
         return below.getPixelColor(point);
     }
-    return new Color();
+    return BLACK;
 };
 
 Process.prototype.spritesAtPoint = function (point, stage) {
@@ -6131,14 +6140,17 @@ Context.prototype.image = function () {
 
 // Context continuations:
 
-Context.prototype.continuation = function () {
+Context.prototype.continuation = function (isReporter) {
     var cont;
     if (this.expression instanceof Array) {
         cont = this;
     } else if (this.parentContext) {
         cont = this.parentContext;
     } else {
-        cont = new Context(null, 'expectReport');
+        cont = new Context(
+            null,
+            isReporter ? 'expectReport' : 'popContext'
+        );
         cont.isContinuation = true;
         return cont;
     }

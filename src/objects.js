@@ -74,7 +74,7 @@ ThreadManager, VariableFrame, detect, BlockMorph, BoxMorph, Color, Animation,
 CommandBlockMorph, FrameMorph, HatBlockMorph, MenuMorph, Morph, MultiArgMorph,
 Point, ReporterBlockMorph, ScriptsMorph, StringMorph, SyntaxElementMorph,  nop,
 TextMorph, contains, degrees, detect, newCanvas, radians, Array, CursorMorph,
-Date, FrameMorph, Math, MenuMorph, Morph, invoke, MorphicPreferences,
+Date, FrameMorph, Math, MenuMorph, Morph, invoke, MorphicPreferences, WHITE,
 Object, PenMorph, Point, Rectangle, ScrollFrameMorph, SliderMorph, String,
 StringMorph, TextMorph, contains, copy, degrees, detect, document, isNaN,
 isString, newCanvas, nop, parseFloat, radians, window, modules, IDE_Morph,
@@ -84,7 +84,7 @@ BlockEditorMorph, BlockDialogMorph, PrototypeHatBlockMorph,  BooleanSlotMorph,
 localize, TableMorph, TableFrameMorph, normalizeCanvas, VectorPaintEditorMorph,
 HandleMorph, AlignmentMorph, Process, XML_Element, WorldMap, copyCanvas*/
 
-modules.objects = '2020-June-14';
+modules.objects = '2020-July-13';
 
 var SpriteMorph;
 var StageMorph;
@@ -172,7 +172,7 @@ SpriteMorph.prototype.useFlatLineEnds = false;
 SpriteMorph.prototype.highlightColor = new Color(250, 200, 130);
 SpriteMorph.prototype.highlightBorder = 8;
 
-SpriteMorph.prototype.bubbleColor = new Color(255, 255, 255);
+SpriteMorph.prototype.bubbleColor = WHITE;
 SpriteMorph.prototype.bubbleFontSize = 14;
 SpriteMorph.prototype.bubbleFontIsBold = true;
 SpriteMorph.prototype.bubbleCorner = 10;
@@ -1525,12 +1525,23 @@ SpriteMorph.prototype.initBlockMigrations = function () {
 SpriteMorph.prototype.initBlockMigrations();
 
 SpriteMorph.prototype.blockAlternatives = {
+    // structure:
+    //      selector: [ersatz, ...]
+    //      ersatz can also be a 2-item array: [selector, input-offset]
+
     // motion:
+    forward: ['changeXPosition', 'changeYPosition'],
     turn: ['turnLeft'],
     turnLeft: ['turn'],
-    changeXPosition: ['changeYPosition', 'setXPosition', 'setYPosition'],
+    doFaceTowards:  ['doGotoObject'],
+    gotoXY: [['doGlide', 1]],
+    doGotoObject: ['doFaceTowards'],
+    doGlide: [['gotoXY', -1]],
+    changeXPosition: ['changeYPosition', 'setXPosition', 'setYPosition',
+        'forward'],
     setXPosition: ['setYPosition', 'changeXPosition', 'changeYPosition'],
-    changeYPosition: ['changeXPosition', 'setYPosition', 'setXPosition'],
+    changeYPosition: ['changeXPosition', 'setYPosition', 'setXPosition',
+        'forward'],
     setYPosition: ['setXPosition', 'changeYPosition', 'changeXPosition'],
     xPosition: ['yPosition'],
     yPosition: ['xPosition'],
@@ -1551,6 +1562,8 @@ SpriteMorph.prototype.blockAlternatives = {
     playSound: ['doPlaySoundUntilDone', 'doPlaySoundAtRate'],
     doPlaySoundUntilDone: ['playSound', 'doPlaySoundAtRate'],
     doPlaySoundAtRate: ['playSound', 'doPlaySoundUntilDone'],
+    doPlayNote: [['doRest', -1]],
+    doRest: [['doPlayNote', 1]],
     doChangeTempo: ['doSetTempo'],
     doSetTempo: ['doChangeTempo'],
     setVolume: ['changeVolume'],
@@ -1577,12 +1590,20 @@ SpriteMorph.prototype.blockAlternatives = {
     setSize: ['changeSize'],
     
     // control:
-    doBroadcast: ['doBroadcastAndWait'],
-    doBroadcastAndWait: ['doBroadcast'],
+    doBroadcast: ['doBroadcastAndWait', 'doSend'],
+    doBroadcastAndWait: ['doBroadcast', 'doSend'],
+    doSend: ['doBroadcast', 'doBroadcastAndWait'],
     doIf: ['doIfElse', 'doUntil'],
     doIfElse: ['doIf', 'doUntil'],
-    doRepeat: ['doUntil'],
-    doUntil: ['doRepeat', 'doIf'],
+    doRepeat: ['doUntil', ['doForever', -1], ['doFor', 2], ['doForEach', 1]],
+    doUntil: ['doRepeat', 'doIf', ['doForever', -1], ['doFor', 2],
+        ['doForEach', 1]],
+    doForever: [['doUntil', 1], ['doRepeat', 1], ['doFor', 3],
+        ['doForEach', 2]],
+    doFor: [['doForever', -3], ['doRepeat', -2], ['doUntil', -2],
+        ['doForEach', -1]],
+    // doRun: ['fork'],
+    // fork: ['doRun'],
 
     // sensing:
     doAsk: ['bubble', 'doThink', 'doSayFor', 'doThinkFor'],
@@ -1619,7 +1640,9 @@ SpriteMorph.prototype.blockAlternatives = {
     // lists - HOFs
     reportMap: ['reportKeep', 'reportFindFirst'],
     reportKeep: ['reportFindFirst', 'reportMap'],
-    reportFindFirst: ['reportKeep', 'reportMap']
+    reportFindFirst: ['reportKeep', 'reportMap'],
+    doForEach: [['doFor', 1], ['doForever', -2], ['doRepeat', -1],
+        ['doUntil', -1]]
 };
 
 // SpriteMorph instance creation
@@ -3152,8 +3175,7 @@ SpriteMorph.prototype.searchBlocks = function (
         if (focus) {focus.destroy(); }
         if (!selection || !scriptFocus) {return; }
         focus = selection.outline(
-            MorphicPreferences.isFlat ? new Color(150, 200, 255)
-                    : new Color(255, 255, 255),
+            MorphicPreferences.isFlat ? new Color(150, 200, 255) : WHITE,
             2
         );
         searchPane.contents.add(focus);
@@ -7169,7 +7191,7 @@ SpriteMorph.prototype.highlight = function (color, border) {
     highlight.cachedImage = this.highlightImage(color, border);
     ctx = highlight.cachedImage.getContext('2d');
     ctx.drawImage(
-        this.highlightImage(new Color(255, 255, 255), 4),
+        this.highlightImage(WHITE, 4),
         border - 4,
         border - 4
     );
@@ -7179,7 +7201,7 @@ SpriteMorph.prototype.highlight = function (color, border) {
         border - 2
     );
     ctx.drawImage(
-        this.highlightImage(new Color(255, 255, 255), 1),
+        this.highlightImage(WHITE, 1),
         border - 1,
         border - 1
     );
@@ -7867,8 +7889,8 @@ StageMorph.prototype.step = function () {
         this.stepGenericConditions();
     }
     if (this.isFastTracked && this.threads.processes.length) {
-        while ((Date.now() - this.lastTime) < 15) { // approx. 67 fps
-            this.threads.step();
+        while (this.isFastTracked && (Date.now() - this.lastTime) < 15) {
+            this.threads.step(); // approx. 67 fps
         }
         this.changed();
     } else {
@@ -9769,7 +9791,7 @@ Costume.prototype.editRotationPointOnly = function (aWorld) {
         null,
         null,
         new Point(1, 1),
-        new Color(255, 255, 255)
+        WHITE
     );
 
     dialog.labelString = 'Costume Editor';
@@ -9951,7 +9973,8 @@ SVG_Costume.prototype.edit = function (
     oncancel,
     onsubmit
 ) {
-    var editor = new VectorPaintEditorMorph();
+    var editor = new VectorPaintEditorMorph(),
+        myself = this;
 
     editor.oncancel = oncancel || nop;
     editor.openIn(
@@ -9959,14 +9982,14 @@ SVG_Costume.prototype.edit = function (
         isnew ? newCanvas(StageMorph.prototype.dimensions) : this.contents,
         isnew ? new Point(240, 180) : this.rotationCenter,
         (img, rc, shapes) => {
-            this.contents = img;
-            this.rotationCenter = rc;
-            this.shapes = shapes;
-            this.version = Date.now();
+            myself.contents = img;
+            myself.rotationCenter = rc;
+            myself.shapes = shapes;
+            myself.version = Date.now();
             aWorld.changed();
             if (anIDE) {
-                if (isnew) {anIDE.currentSprite.addCostume(this); }
-                anIDE.currentSprite.wearCostume(this);
+                if (isnew) {anIDE.currentSprite.addCostume(myself); }
+                anIDE.currentSprite.wearCostume(myself);
                 anIDE.hasChangedMedia = true;
             }
             (onsubmit || nop)();
@@ -10012,7 +10035,7 @@ function CostumeEditorMorph(costume) {
 CostumeEditorMorph.prototype.init = function (costume) {
     this.costume = costume || new Costume();
     this.rotationCenter = this.costume.rotationCenter.copy();
-    this.margin = new Point(0, 0);
+    this.margin = ZERO;
     CostumeEditorMorph.uber.init.call(this);
 };
 
@@ -10623,8 +10646,8 @@ CellMorph.prototype.init = function (contents, color, idx, parentCell) {
     CellMorph.uber.init.call(
         this,
         SyntaxElementMorph.prototype.corner,
-        1.000001, // shadow bug in Chrome,
-        new Color(255, 255, 255)
+        1,
+        WHITE
     );
     this.color = color || new Color(255, 140, 0);
     this.isBig = false;
@@ -10758,7 +10781,7 @@ CellMorph.prototype.createContents = function () {
                 this.contentsMorph.isEditable = true;
                 this.contentsMorph.enableSelecting();
             }
-            this.contentsMorph.setColor(new Color(255, 255, 255));
+            this.contentsMorph.setColor(WHITE);
         } else if (typeof this.contents === 'boolean') {
             img = SpriteMorph.prototype.booleanMorph.call(
                 null,
@@ -10809,7 +10832,7 @@ CellMorph.prototype.createContents = function () {
                         true, // italic
                         'center'
                     );
-                    this.contentsMorph.setColor(new Color(255, 255, 255));
+                    this.contentsMorph.setColor(WHITE);
                 } else {
                     this.contentsMorph = new ListWatcherMorph(
                         this.contents,
@@ -10831,7 +10854,7 @@ CellMorph.prototype.createContents = function () {
                 this.contentsMorph.isEditable = true;
                 this.contentsMorph.enableSelecting();
             }
-            this.contentsMorph.setColor(new Color(255, 255, 255));
+            this.contentsMorph.setColor(WHITE);
         }
         this.add(this.contentsMorph);
     }
@@ -10942,7 +10965,7 @@ CellMorph.prototype.reactToEdit = function (textMorph) {
         if (listWatcher) {
             listWatcher.list.put(
                 textMorph.text,
-                this.idx + listWatcher.start - 1
+                this.idx
             );
         }
     }
@@ -11199,7 +11222,7 @@ WatcherMorph.prototype.fixLayout = function () {
             false,
             false,
             MorphicPreferences.isFlat ? new Point() : new Point(1, 1),
-            new Color(255, 255, 255)
+            WHITE
         );
         this.add(this.labelMorph);
     }
@@ -11770,7 +11793,7 @@ StagePrompterMorph.prototype.init = function (question) {
     );
 
     // override inherited behavior
-    this.color = new Color(255, 255, 255);
+    this.color = WHITE;
     if (this.label) {this.add(this.label); }
     this.add(this.inputField);
     this.add(this.button);
